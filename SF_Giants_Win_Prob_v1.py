@@ -4,8 +4,8 @@ from pybaseball import playerid_lookup, batting_stats, pitching_stats
 from fuzzywuzzy import process
 
 # --- Manual Input Section ---
-giants_pitcher_name = 'Landen Roupp'
-opp_pitcher_name = 'Joe Boyle'
+giants_pitcher_name = 'Justin Verlander'
+opp_pitcher_name = 'Adrian Houser'
 giants_team_name = 'San Francisco Giants'
 opp_team_name = 'Tampa Bay Rays'
 is_home_game = True
@@ -14,23 +14,23 @@ sf_line = [
     'Rafael Devers', 
     'Willy Adames', 
     'Dominic Smith', 
-    'Casey Schmitt', 
     'Jung Hoo Lee', 
-    'Christian Koss', 
-    'Patrick Bailey', 
-    'Grant McCray'
+    'Christian Koss',
+    'Tyler Fitzgerald', 
+    'Grant McCray',
+    'Andrew Knizner'
     ]
 
 opp_line = [
     'Chandler Simpson', 
+    'Yandy Diaz',
     'Brandon Lowe', 
-    'Yandy Diaz', 
+    'Junior Caminero',
+    'Jake Mangum',
     'Josh Lowe', 
-    'Junior Caminero', 
-    'Jake Mangum', 
+    'Ha-Seong Kim',     
     'Bob Seymour', 
-    'Ha-Seong Kim', 
-    'Hunter Feduccia'
+    'Nick Fortes'
     ]
 
 # --- Functions ---
@@ -125,7 +125,7 @@ def get_player_stats(player_ids, stats_type='hitting'):
                             stats = pitching_stats(2025, qual=0)
                             player_stats_row = stats[stats['IDfg'] == fg_id]
                             if not player_stats_row.empty:
-                                player_stats[player_name] = player_stats_row['FIP'].iloc[0]
+                                player_stats[player_name] = player_stats_row['era'].iloc[0]
                             else:
                                 player_stats[player_name] = 4.00
                     else:
@@ -141,31 +141,40 @@ def get_team_bullpen_stats(team_name):
     try:
         team_lookup = statsapi.lookup_team(team_name)
         if not team_lookup:
-            print(f"No team found for {team_name}. Using default bullpen FIP.")
+            print(f"No team found for {team_name}. Using default bullpen ERA.")
             return 4.00
         team_id = team_lookup[0]['id']
         stats = statsapi.team_stats(team_id, 'pitching', 'season')['stats'][0]['stats']
-        return float(stats.get('fip', 4.00))
+        return float(stats.get('era', 4.00))
     except Exception as e:
         print(f"Error retrieving bullpen stats for {team_name}: {e}")
         return 4.00
 
-def calculate_win_probability(giants_stats, opp_stats, giants_pitcher_stat, opp_pitcher_stat, is_home):
-    giants_runs = sum(ops / 100 * 0.95 for ops in giants_stats.values()) / len(giants_stats) * 4.5
-    opp_runs = sum(ops / 100 * 1.00 for ops in opp_stats.values()) / len(opp_stats) * 4.5
-    giants_runs_allowed = giants_pitcher_stat * 0.9
-    opp_runs_allowed = opp_pitcher_stat * 0.9
+def calculate_win_probability(giants_stats, opp_stats, giants_pitcher_fip, opp_pitcher_fip, is_home):
     
-    giants_win_prob = (giants_runs ** 2) / (giants_runs ** 2 + opp_runs_allowed ** 2) * 100
-    opp_win_prob = (opp_runs ** 2) / (opp_runs ** 2 + giants_runs_allowed ** 2) * 100
-    final_win_prob = (giants_win_prob + (100 - opp_win_prob)) / 2
+    # Calculate Team Offensive Score (based on OPS+)
+    giants_off_score = sum(ops / 100 for ops in giants_stats.values()) / len(giants_stats)
+    opp_off_score = sum(ops / 100 for ops in opp_stats.values()) / len(opp_stats)
     
+    # A simplified model for runs scored based on offense vs. opposing pitcher
+    # A team with an OPS+ of 100 (league average) will score about 4.5 runs per game against a 4.00 ERA pitcher.
+    
+    giants_runs = (giants_off_score * 4.5) * (4.00 / opp_pitcher_fip)
+    opp_runs = (opp_off_score * 4.5) * (4.00 / giants_pitcher_fip)
+    
+    # Adjust for home field advantage
     if is_home:
-        final_win_prob *= 1.05
-    
+        giants_runs *= 1.05
+        
     print(f"\nEstimated Runs: Giants {giants_runs:.2f}, Opponent {opp_runs:.2f}")
-    print(f"Giants Pitcher FIP: {giants_pitcher_stat:.2f}, Opponent Pitcher FIP: {opp_pitcher_stat:.2f}")
-    return min(max(final_win_prob, 0), 100)
+    print(f"Giants Pitcher ERA: {giants_pitcher_fip:.2f}, Opponent Pitcher ERA: {opp_pitcher_fip:.2f}")
+    
+    exponent = 1.83
+    
+    # Use Pythagorean Expectation formula to calculate win probability
+    win_prob = (giants_runs**exponent) / (giants_runs**exponent + opp_runs**exponent)
+    
+    return win_prob * 100
 
 # --- Main Execution ---
 if __name__ == "__main__":
