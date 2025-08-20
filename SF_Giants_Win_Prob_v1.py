@@ -159,8 +159,8 @@ def calculate_win_probability(giants_stats, opp_stats, giants_pitcher_fip, opp_p
     # A simplified model for runs scored based on offense vs. opposing pitcher
     # A team with an OPS+ of 100 (league average) will score about 4.5 runs per game against a 4.00 ERA pitcher.
     
-    giants_runs = (giants_off_score * 4.5) * (4.00 / opp_pitcher_fip)
-    opp_runs = (opp_off_score * 4.5) * (4.00 / giants_pitcher_fip)
+    giants_runs = (giants_off_score * 4.5) * (opp_pitcher_fip / 4.00)
+    opp_runs = (opp_off_score * 4.5) * (giants_pitcher_fip / 4.00)
     
     # Adjust for home field advantage
     if is_home:
