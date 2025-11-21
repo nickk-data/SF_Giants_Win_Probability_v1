@@ -14,16 +14,7 @@ This Python script calculates the win probability for a Major League Baseball ga
 
 # How to Use
 
-Make sure you have Python installed on your system. This script requires several libraries, which you can install using pip.
-Bash
-
-    pip install statsapi pybaseball fuzzywuzzy python-levenshtein
-
-Note: python-levenshtein is a dependency of fuzzywuzzy that improves performance.
-
-
-
-Open the main.py (or whatever you've named the file) in a code editor. Navigate to the Manual Input Section at the top of the file and edit the variables with the information for the game you want to analyze. This is a v1 where it's manual input and a basic win probability model. Additional versions with automation and more complex predicitions will be created.
+Open the file and navigate to the Manual Input Section at the top of the file and edit the variables with the information for the game you want to analyze. This is a v1 where it's manual input and a basic win probability model. Additional versions with automation and more complex predicitions will be created.
 
 # --- Manual Input Section ---
     giants_pitcher_name = 'Landen Roupp'
